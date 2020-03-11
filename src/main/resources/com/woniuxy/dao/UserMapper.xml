@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.woniuxy.dao.UserMapper">
+	<sql id="base_col_list">
+		uid,uname,upwd,uaccount,uemail
+	</sql>
+	<select id="findUser" parameterType="users" resultType="users">
+		select 
+		<include refid="base_col_list"></include>
+		from users
+		where uname=#{uname} and upwd=#{upwd}
+	</select >
+	<select id="findAll" resultType="users" >
+		select 
+		<include refid="base_col_list"></include>
+		from users
+	</select>
+	<select id="findByPage" parameterType="pageBean" resultType="users">
+		select 
+		<include refid="base_col_list"></include>
+		from users
+		<where>
+			<if test="queryVal!=null">
+				uname like concat('%',#{queryVal},'%')
+			</if>
+		</where>
+		order by udate desc
+		limit ${(currentPage-1)*pageSize},${pageSize}
+	</select>
+	<select id="countAll" parameterType="pageBean" resultType="int">
+		select count(*) from users
+		<where>
+			<if test="queryVal!=null">
+				uname like concat('%',#{queryVal},'%')
+			</if>
+		</where>
+	</select>
+	<insert id="saveUser"  parameterType="users">
+		insert into users
+		values(#{uid},#{uname},#{upwd},#{uaccount},#{uemail},#{udate})
+	</insert>
+	<select id="findOne" parameterType="java.lang.Integer" resultType="users">
+		select 
+		<include refid="base_col_list"></include>
+		from users
+		<where>
+			uid=#{uid}
+		</where>
+	</select>
+	<update id="update" parameterType="users">
+		update users
+		<set>
+			<if test="uname!=null">
+				uname=#{uname},
+			</if>
+			<if test="upwd!=null">
+				upwd=#{upwd},
+			</if>
+			<if test="uaccount!=null">
+				uaccount=#{uaccount},
+			</if>
+			<if test="uemail!=null">
+				uemail=#{uemail},
+			</if>
+			<if test="udate!=null">
+				udate=#{udate},
+			</if>
+		</set>
+		<where>
+			uid=#{uid}
+		</where>
+	</update>
+	<delete id="delete" parameterType="java.lang.Integer">
+		delete from users
+		<where>
+			uid=#{uid}
+		</where>
+	</delete>
+	<delete id="delUsers">
+		delete from users
+		 <!-- 当mybatis传参时，如果是数组或者list，那么它会自动将参数放入map并传入，这时它的key是array或者list -->
+		<where>
+			uid in 
+			<foreach collection="array" open="(" close=")" separator="," item="uid">
+				#{uid}
+			</foreach>
+		</where>
+	</delete>
+	<!-- <insert id="assignRoles">
+			 INSERT INTO userRole VALUES(NULL,1,1),(NULL,1,2),(NULL,1,3)
+		insert into roleusers values
+		<foreach collection="rids" item="rid" separator=",">
+			(null,#{uid},${rid})
+		</foreach>
+	</insert> -->
+	<insert id="assignRoles" parameterType="java.lang.Integer">
+		insert into roleusers values
+			(null,#{uid},${rid})
+	</insert>
+	<delete id="assignRoleDel" parameterType="java.lang.Integer">
+		delete from roleusers
+		<where>
+			rid=#{rid} and uid=#{uid}
+		</where>
+	</delete>
+	<select id="selectPermissionByUser" parameterType="users" resultType="permission">
+		select * from permission
+		where pid in(
+		select pid from rolepermission
+		where rid in
+		(SELECT rid from roleusers
+		where uid=#{uid}))
+	</select>
+</mapper>
